@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gelişmiş Portföy Analiz Aracı</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Genel Stil */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: #f8f9fa;
+        color: #343a40;
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      }
+      h1,
+      h2,
+      h3 {
+        text-align: center;
+        color: #2c3e50;
+      }
+      h1 {
+        font-size: 2.2em;
+      }
+      h2 {
+        font-size: 1.8em;
+        margin-top: 40px;
+      }
+      h3 {
+        font-size: 1.4em;
+        color: #34495e;
+        margin-bottom: 20px;
+        text-align: left;
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 10px;
+      }
+
+      /* Varsayımlar bölümü stili */
+      .assumptions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+        padding: 20px;
+        background-color: #f1f3f5;
+        border-radius: 8px;
+      }
+      .assumption-item label {
+        display: block;
+        font-weight: 500;
+        margin-bottom: 5px;
+        color: #495057;
+      }
+
+      /* Tablo Stili */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #dee2e6;
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      th {
+        background-color: #f1f3f5;
+        font-weight: 600;
+      }
+      input,
+      select {
+        width: 95%;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        box-sizing: border-box;
+        text-align: center;
+        transition: border-color 0.2s;
+      }
+      input:focus {
+        border-color: #80bdff;
+        outline: 0;
+      }
+
+      /* Buton Stilleri */
+      .button-container {
+        text-align: center;
+        margin: 25px 0;
+      }
+      button {
+        color: white;
+        padding: 12px 28px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 5px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+      #calculateBtn {
+        background-color: #28a745;
+      }
+      #calculateBtn:hover {
+        background-color: #218838;
+      }
+      #addRowBtn {
+        background-color: #007bff;
+      }
+      #addRowBtn:hover {
+        background-color: #0069d9;
+      }
+      .delete-btn {
+        background-color: #dc3545;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        line-height: 30px;
+        padding: 0;
+        box-shadow: none;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      .delete-btn:hover {
+        background-color: #c82333;
+        transform: scale(1.1);
+      }
+
+      /* Modern Sonuç Alanı Stilleri */
+      #results {
+        margin-top: 40px;
+        display: none;
+      }
+      .results-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      @media (min-width: 992px) {
+        .results-grid {
+          grid-template-columns: 1.5fr 1fr;
+        }
+      }
+      .card {
+        background: #fff;
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+      }
+      .summary {
+        display: flex;
+        justify-content: space-around;
+        text-align: center;
+        margin-bottom: 25px;
+      }
+      .summary-item {
+        font-size: 1.1em;
+      }
+      .summary-label {
+        display: block;
+        color: #6c757d;
+        font-size: 0.9em;
+      }
+      .summary-value {
+        font-weight: 700;
+        font-size: 1.4em;
+        color: #2c3e50;
+      }
+      .asset-list .asset-item {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f3f5;
+      }
+      .asset-list .asset-item:last-child {
+        border-bottom: none;
+      }
+      .asset-name {
+        font-weight: 600;
+      }
+      .asset-details {
+        text-align: right;
+        color: #6c757d;
+        font-size: 0.9em;
+      }
+      .asset-amount {
+        color: #343a40;
+        font-weight: 600;
+        display: block;
+        font-size: 1.1em;
+      }
+      .progress-bar-container {
+        grid-column: 1 / -1;
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        margin-top: 8px;
+      }
+      .progress-bar {
+        height: 100%;
+        background-color: #007bff;
+        border-radius: 4px;
+      }
+      .scenarios-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .scenario-card {
+        text-align: center;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+      }
+      .scenario-card h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        color: #495057;
+      }
+      .scenario-return {
+        font-size: 2em;
+        font-weight: 700;
+        margin-bottom: 5px;
+      }
+      .return-positive {
+        color: #28a745;
+      }
+      .return-negative {
+        color: #dc3545;
+      }
+      .scenario-value {
+        font-size: 1.1em;
+        color: #6c757d;
+        font-weight: 600;
+      }
+      #chart-container {
+        position: relative;
+        height: 350px; /* Grafiğin yüksekliği */
+        width: 100%;
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Gelişmiş Portföy Analiz Aracı</h1>
+      <p style="text-align: center">
+        Varsayımlarınızı ve portföyünüzü girerek senaryo analizini anında yapın.
+      </p>
+
+      <h2>Genel Varsayımlar</h2>
+      <div class="assumptions-grid">
+        <div class="assumption-item">
+          <label for="usd-bad">Kötü Senaryo USD/TRY Artış Beklentisi (%)</label>
+          <input type="number" id="usd-bad" value="30" />
+        </div>
+        <div class="assumption-item">
+          <label for="usd-base">Baz Senaryo USD/TRY Artış Beklentisi (%)</label>
+          <input type="number" id="usd-base" value="15" />
+        </div>
+        <div class="assumption-item">
+          <label for="usd-good">İyi Senaryo USD/TRY Artış Beklentisi (%)</label>
+          <input type="number" id="usd-good" value="10" />
+        </div>
+      </div>
+
+      <h2>Portföy Dağılımı</h2>
+      <table id="assetTable">
+        <thead>
+          <tr>
+            <th>Varlık Adı</th>
+            <th>Risk Skoru (1-10)</th>
+            <th>Kötü Senaryo Getirisi (%)</th>
+            <th>Baz Senaryo Getirisi (%)</th>
+            <th>İyi Senaryo Getirisi (%)</th>
+            <th>Dolar Bazlı mı?</th>
+            <th>Tutarınız (TL)</th>
+            <th>Sil</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="button-container">
+        <button id="addRowBtn">Yeni Varlık Satırı Ekle</button>
+        <button id="calculateBtn">Portföyü Hesapla</button>
+      </div>
+
+      <div id="results">
+        <div class="results-grid">
+          <div class="card" id="distribution-card"></div>
+          <div class="card" id="scenarios-card"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let portfolioPieChart = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // ### DEĞİŞİKLİK BURADA ###
+        // Varsayılan varlık listesi sizin sağladığınız değerlerle güncellendi.
+        const defaultAssets = [
+          {
+            name: "Dolar",
+            risk: 1,
+            bad: 0,
+            base: 0,
+            good: 0,
+            isUsd: true,
+            amount: 4100,
+          },
+          {
+            name: "TL Nakit",
+            risk: 2,
+            bad: 0,
+            base: 0,
+            good: 0,
+            isUsd: false,
+            amount: 5000,
+          },
+          {
+            name: "TL Mevduat ",
+            risk: 1,
+            bad: 12,
+            base: 15,
+            good: 16.5,
+            isUsd: false,
+            amount: 15000,
+          },
+          {
+            name: "Altın",
+            risk: 4,
+            bad: 40,
+            base: 20,
+            good: 10,
+            isUsd: true,
+            amount: 18000,
+          },
+          {
+            name: "BIST Hisseleri",
+            risk: 9,
+            bad: -40,
+            base: 35,
+            good: 75,
+            isUsd: false,
+            amount: 35000,
+          },
+          {
+            name: "Yabancı Hisseler",
+            risk: 7,
+            bad: -20,
+            base: 10,
+            good: 25,
+            isUsd: true,
+            amount: 34000,
+          },
+          {
+            name: "Kripto Varlık",
+            risk: 10,
+            bad: -60,
+            base: 40,
+            good: 75,
+            isUsd: true,
+            amount: 28000,
+          },
+        ];
+        defaultAssets.forEach((asset) => addAssetRow(asset));
+      });
+
+      const addRowBtn = document.getElementById("addRowBtn");
+      const calculateBtn = document.getElementById("calculateBtn");
+      const assetTableBody = document.querySelector("#assetTable tbody");
+
+      assetTableBody.addEventListener("click", function (event) {
+        if (event.target.classList.contains("delete-btn")) {
+          event.target.closest("tr").remove();
+        }
+      });
+
+      function addAssetRow(asset = {}) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+                <td><input type="text" class="asset-name" value="${
+                  asset.name || ""
+                }"></td>
+                <td><input type="number" class="risk-score" min="1" max="10" value="${
+                  asset.risk || 5
+                }"></td>
+                <td><input type="number" class="bad-return" value="${
+                  asset.bad ?? -10
+                }"></td>
+                <td><input type="number" class="base-return" value="${
+                  asset.base ?? 15
+                }"></td>
+                <td><input type="number" class="good-return" value="${
+                  asset.good ?? 30
+                }"></td>
+                <td><input type="checkbox" class="is-usd" ${
+                  asset.isUsd ? "checked" : ""
+                }></td>
+                <td><input type="number" class="amount" value="${
+                  asset.amount || 0
+                }" min="0"></td>
+                <td><button class="delete-btn">&times;</button></td>
+            `;
+        assetTableBody.appendChild(row);
+      }
+
+      addRowBtn.addEventListener("click", () => addAssetRow());
+
+      calculateBtn.addEventListener("click", function () {
+        const usdTryReturns = {
+          bad:
+            (parseFloat(document.getElementById("usd-bad").value) || 0) / 100,
+          base:
+            (parseFloat(document.getElementById("usd-base").value) || 0) / 100,
+          good:
+            (parseFloat(document.getElementById("usd-good").value) || 0) / 100,
+        };
+
+        const portfolio = [];
+        const rows = assetTableBody.querySelectorAll("tr");
+        rows.forEach((row) => {
+          const name = row.querySelector(".asset-name").value;
+          const amount = parseFloat(row.querySelector(".amount").value) || 0;
+          if (name && amount > 0) {
+            portfolio.push({
+              name: name,
+              risk: parseFloat(row.querySelector(".risk-score").value) || 0,
+              bad:
+                (parseFloat(row.querySelector(".bad-return").value) || 0) / 100,
+              base:
+                (parseFloat(row.querySelector(".base-return").value) || 0) /
+                100,
+              good:
+                (parseFloat(row.querySelector(".good-return").value) || 0) /
+                100,
+              isUsd: row.querySelector(".is-usd").checked,
+              amount: amount,
+            });
+          }
+        });
+        if (portfolio.length === 0) {
+          alert("Lütfen en az bir varlık ve tutar girin.");
+          return;
+        }
+
+        const totalPrincipal = portfolio.reduce(
+          (sum, asset) => sum + asset.amount,
+          0
+        );
+        portfolio.forEach((asset) => {
+          asset.weight = asset.amount / totalPrincipal;
+        });
+        portfolio.sort((a, b) => b.amount - a.amount);
+        const totalRisk = portfolio.reduce(
+          (sum, asset) => sum + asset.weight * asset.risk,
+          0
+        );
+
+        function calculateScenarioReturn(scenario) {
+          return portfolio.reduce((total, asset) => {
+            let assetReturn = asset[scenario];
+            if (asset.isUsd) {
+              assetReturn =
+                (1 + assetReturn) * (1 + usdTryReturns[scenario]) - 1;
+            }
+            return total + asset.weight * assetReturn;
+          }, 0);
+        }
+
+        const scenarios = {
+          bad: { return: calculateScenarioReturn("bad"), name: "Kötü Senaryo" },
+          base: {
+            return: calculateScenarioReturn("base"),
+            name: "Baz Senaryo",
+          },
+          good: {
+            return: calculateScenarioReturn("good"),
+            name: "İyi Senaryo",
+          },
+        };
+
+        displayModernResults({
+          portfolio,
+          totalPrincipal,
+          totalRisk,
+          scenarios,
+        });
+      });
+
+      function displayModernResults(data) {
+        const { portfolio, totalPrincipal, totalRisk, scenarios } = data;
+        const fC = (num) =>
+          num.toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
+
+        const distCard = document.getElementById("distribution-card");
+        distCard.innerHTML = `
+                <h3>Dağılım ve Risk</h3>
+                <div class="summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Toplam Bakiye</span>
+                        <span class="summary-value">${fC(totalPrincipal)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Ortalama Risk</span>
+                        <span class="summary-value">${totalRisk.toFixed(
+                          2
+                        )} / 10</span>
+                    </div>
+                </div>
+                <div id="chart-container">
+                    <canvas id="portfolioPieChart"></canvas>
+                </div>
+                <div class="asset-list">
+                    ${portfolio
+                      .map(
+                        (asset) => `
+                        <div class="asset-item">
+                            <div class="asset-name">${asset.name}</div>
+                            <div class="asset-details">
+                                <span class="asset-amount">${fC(
+                                  asset.amount
+                                )}</span>
+                                (%${(asset.weight * 100).toFixed(1)})
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: ${
+                                  asset.weight * 100
+                                }%;"></div>
+                            </div>
+                        </div>
+                    `
+                      )
+                      .join("")}
+                </div>
+            `;
+
+        const scenariosCard = document.getElementById("scenarios-card");
+        scenariosCard.innerHTML = `
+                <h3>Senaryo Analizi</h3>
+                <div class="scenarios-grid">
+                    ${Object.values(scenarios)
+                      .map(
+                        (sc) => `
+                        <div class="scenario-card">
+                            <h4>${sc.name}</h4>
+                            <div class="scenario-return ${
+                              sc.return >= 0
+                                ? "return-positive"
+                                : "return-negative"
+                            }">
+                                %${(sc.return * 100).toFixed(2)}
+                            </div>
+                            <div class="scenario-value">
+                                ${fC(totalPrincipal * (1 + sc.return))}
+                            </div>
+                        </div>
+                    `
+                      )
+                      .join("")}
+                </div>
+            `;
+
+        document.getElementById("results").style.display = "block";
+
+        if (portfolioPieChart) {
+          portfolioPieChart.destroy();
+        }
+
+        const ctx = document
+          .getElementById("portfolioPieChart")
+          .getContext("2d");
+        const chartData = {
+          labels: portfolio.map((asset) => asset.name),
+          datasets: [
+            {
+              label: "Portföy Dağılımı",
+              data: portfolio.map((asset) => asset.amount),
+              backgroundColor: [
+                "#4e73df",
+                "#1cc88a",
+                "#36b9cc",
+                "#f6c23e",
+                "#e74a3b",
+                "#858796",
+                "#5a5c69",
+                "#f8f9fc",
+                "#5e35b1",
+                "#d81b60",
+              ],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+            },
+          ],
+        };
+
+        portfolioPieChart = new Chart(ctx, {
+          type: "doughnut",
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+              title: {
+                display: true,
+                text: "Varlık Dağılım Grafiği",
+                font: { size: 16 },
+              },
+            },
+            cutout: "60%",
+          },
+        });
+      }
+    </script>
+  </body>
+</html>
